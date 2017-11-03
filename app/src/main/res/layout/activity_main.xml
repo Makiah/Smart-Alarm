@@ -5,21 +5,31 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="makiah.smartalarm.MainActivity">
+    tools:context="makiah.smartalarm.MainActivity"
+    tools:layout_editor_absoluteY="81dp"
+    tools:layout_editor_absoluteX="0dp">
 
-    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-        android:orientation="vertical" android:layout_width="match_parent"
-        xmlns:opencv="http://schemas.android.com/apk/res-auto"
-        android:layout_height="match_parent">
+    <makiah.smartalarm.JavaCameraViewWithFlash
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:visibility="gone"
+        android:id="@+id/show_camera_activity_java_surface_view"/>
 
-        <org.opencv.android.JavaCameraView
-            android:layout_width="fill_parent"
-            android:layout_height="fill_parent"
-            android:visibility="gone"
-            android:id="@+id/show_camera_activity_java_surface_view"
-            opencv:show_fps="true"
-            opencv:camera_id="any" />
+    <Button
+        android:id="@+id/button"
+        android:onClick="toggleCameraFlash"
+        android:text="Toggle Flash"
+        android:visibility="visible"
+        android:layout_width="0dp"
+        android:layout_height="75dp"
+        android:layout_marginBottom="16dp"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        tools:layout_constraintRight_creator="1"
+        android:layout_marginStart="9dp"
+        android:layout_marginEnd="9dp"
+        tools:layout_constraintLeft_creator="1" />
 
-    </LinearLayout>
 
 </android.support.constraint.ConstraintLayout>

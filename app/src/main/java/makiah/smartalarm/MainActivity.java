@@ -5,9 +5,9 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.SurfaceView;
+import android.view.View;
 import android.view.WindowManager;
 
-import org.opencv.android.JavaCameraView;
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.CameraBridgeViewBase.CvCameraViewFrame;
@@ -25,6 +25,7 @@ public class MainActivity extends AppCompatActivity implements CvCameraViewListe
 
     // Loads camera view of OpenCV for us to use. This lets us see using OpenCV
     private CameraBridgeViewBase cameraBridgeViewBase;
+    private JavaCameraViewWithFlash javaCameraView;
 
     // Used in Camera selection from menu (when implemented)
     private boolean              mIsJavaCamera = true;
@@ -35,6 +36,9 @@ public class MainActivity extends AppCompatActivity implements CvCameraViewListe
     Mat mRgbaF;
     Mat mRgbaT;
 
+    /**
+     * The callback for when OpenCV has finished initialization.
+     */
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
         public void onManagerConnected(int status) {
@@ -64,7 +68,8 @@ public class MainActivity extends AppCompatActivity implements CvCameraViewListe
 
         setContentView(R.layout.activity_main);
 
-        cameraBridgeViewBase = (JavaCameraView) findViewById(R.id.show_camera_activity_java_surface_view);
+        javaCameraView = (JavaCameraViewWithFlash) findViewById(R.id.show_camera_activity_java_surface_view);
+        cameraBridgeViewBase = javaCameraView;
 
         cameraBridgeViewBase.setVisibility(SurfaceView.VISIBLE);
 
@@ -109,6 +114,11 @@ public class MainActivity extends AppCompatActivity implements CvCameraViewListe
         mRgba.release();
     }
 
+    /**
+     * When the JavaCameraView sees a new frame (called very often).
+     * @param inputFrame
+     * @return
+     */
     public Mat onCameraFrame(CvCameraViewFrame inputFrame) {
 
         // TODO Auto-generated method stub
@@ -119,5 +129,10 @@ public class MainActivity extends AppCompatActivity implements CvCameraViewListe
         Core.flip(mRgbaF, mRgba, 1 );
 
         return mRgba; // This function must return
+    }
+
+    public void toggleCameraFlash(View currentView)
+    {
+        javaCameraView.toggleFlashState();
     }
 }
