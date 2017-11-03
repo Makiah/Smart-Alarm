@@ -68,11 +68,11 @@ public class MainActivity extends AppCompatActivity implements CvCameraViewListe
 
         setContentView(R.layout.activity_main);
 
+        // Create both a CameraBridgeViewBase and a JavaCameraView with flash so that I can modify the flash state while also being able to view the camera.
         javaCameraView = (JavaCameraViewWithFlash) findViewById(R.id.show_camera_activity_java_surface_view);
+
         cameraBridgeViewBase = javaCameraView;
-
         cameraBridgeViewBase.setVisibility(SurfaceView.VISIBLE);
-
         cameraBridgeViewBase.setCvCameraViewListener(this);
     }
 
@@ -115,12 +115,14 @@ public class MainActivity extends AppCompatActivity implements CvCameraViewListe
     }
 
     /**
-     * When the JavaCameraView sees a new frame (called very often).
-     * @param inputFrame
+     * When the JavaCameraView sees a new frame (called very often).  This method has to
+     * be modified in order to view single images.
+     *
+     * @param inputFrame the pixel array which the camera currently sees.
      * @return
      */
-    public Mat onCameraFrame(CvCameraViewFrame inputFrame) {
-
+    public Mat onCameraFrame(CvCameraViewFrame inputFrame)
+    {
         // TODO Auto-generated method stub
         mRgba = inputFrame.rgba();
         // Rotate mRgba 90 degrees
@@ -128,9 +130,13 @@ public class MainActivity extends AppCompatActivity implements CvCameraViewListe
         Imgproc.resize(mRgbaT, mRgbaF, mRgbaF.size(), 0,0, 0);
         Core.flip(mRgbaF, mRgba, 1 );
 
-        return mRgba; // This function must return
+        return mRgba; // This function currently just returns the pixel array it sees.
     }
 
+    /**
+     * A button on the UI triggers this function.
+     * @param currentView A required parameter for the UI element method.
+     */
     public void toggleCameraFlash(View currentView)
     {
         javaCameraView.toggleFlashState();
