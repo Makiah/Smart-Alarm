@@ -20,9 +20,19 @@
         <activity
             android:name=".alarmsetter.AlarmSetterActivity"
             android:label="Testing">
+
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".startui.StartUIActivity" />
         </activity>
 
-        <activity></activity>
+        <activity
+            android:name=".cameraview.CameraViewActivity">
+
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".startui.StartUIActivity" />
+        </activity>
 
     </application>
 

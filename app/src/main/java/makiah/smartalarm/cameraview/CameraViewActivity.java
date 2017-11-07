@@ -21,9 +21,9 @@ import org.opencv.imgproc.Imgproc;
 
 import makiah.smartalarm.R;
 
-public class MainActivity extends AppCompatActivity implements CvCameraViewListener2 {
+public class CameraViewActivity extends AppCompatActivity implements CvCameraViewListener2 {
 
-    private static final String TAG = "MainActivity";
+    private static final String TAG = "CameraViewActivity";
 
     // Loads camera view of OpenCV for us to use. This lets us see using OpenCV
     private CameraBridgeViewBase cameraBridgeViewBase;
@@ -58,7 +58,7 @@ public class MainActivity extends AppCompatActivity implements CvCameraViewListe
         }
     };
 
-    public MainActivity() {
+    public CameraViewActivity() {
         Log.i(TAG, "Instantiated new " + this.getClass());
     }
 
