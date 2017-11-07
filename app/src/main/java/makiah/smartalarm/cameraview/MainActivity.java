@@ -1,4 +1,4 @@
-package makiah.smartalarm;
+package makiah.smartalarm.cameraview;
 
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
@@ -18,6 +18,8 @@ import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.imgproc.Imgproc;
+
+import makiah.smartalarm.R;
 
 public class MainActivity extends AppCompatActivity implements CvCameraViewListener2 {
 
@@ -66,7 +68,7 @@ public class MainActivity extends AppCompatActivity implements CvCameraViewListe
         super.onCreate(savedInstanceState);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.camera_view_activity);
 
         // Create both a CameraBridgeViewBase and a JavaCameraView with flash so that I can modify the flash state while also being able to view the camera.
         javaCameraView = (JavaCameraViewWithFlash) findViewById(R.id.show_camera_activity_java_surface_view);
@@ -90,7 +92,7 @@ public class MainActivity extends AppCompatActivity implements CvCameraViewListe
         super.onResume();
         if (!OpenCVLoader.initDebug()) {
             Log.d(TAG, "Internal OpenCV library not found. Using OpenCV Manager for initialization");
-            OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_0_0, this, mLoaderCallback);
+            OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_3_0, this, mLoaderCallback);
         } else {
             Log.d(TAG, "OpenCV library found inside package. Using it!");
             mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
@@ -125,6 +127,7 @@ public class MainActivity extends AppCompatActivity implements CvCameraViewListe
     {
         // TODO Auto-generated method stub
         mRgba = inputFrame.rgba();
+
         // Rotate mRgba 90 degrees
         Core.transpose(mRgba, mRgbaT);
         Imgproc.resize(mRgbaT, mRgbaF, mRgbaF.size(), 0,0, 0);

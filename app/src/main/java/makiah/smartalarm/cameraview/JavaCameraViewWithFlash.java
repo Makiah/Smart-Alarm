@@ -1,4 +1,4 @@
-package makiah.smartalarm;
+package makiah.smartalarm.cameraview;
 
 import android.content.Context;
 import android.hardware.Camera;
@@ -20,16 +20,16 @@ public class JavaCameraViewWithFlash extends JavaCameraView
 
     /**
      * Will turn the camera flash on and off.
-     * @param on
+     * @param state the new state
      */
-    public void setFlashState(boolean on) {
+    public void setFlashState(boolean state) {
         Camera.Parameters params = mCamera.getParameters();
-        flashState = on;
-        if (on) {
-            params.setFlashMode(params.FLASH_MODE_OFF);
+        flashState = state;
+        if (state) {
+            params.setFlashMode(params.FLASH_MODE_TORCH);
             mCamera.setParameters(params);
         } else {
-            params.setFlashMode(params.FLASH_MODE_TORCH);
+            params.setFlashMode(params.FLASH_MODE_OFF);
             mCamera.setParameters(params);
         }
     }
