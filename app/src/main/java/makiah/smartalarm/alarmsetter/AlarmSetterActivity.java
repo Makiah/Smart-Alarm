@@ -10,6 +10,6 @@ public class AlarmSetterActivity extends Activity
     protected void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.alarm_setter_activity);
+        setContentView(R.layout.activity_alarm_setter);
     }
 }

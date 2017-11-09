@@ -10,11 +10,13 @@ public class JavaCameraViewWithFlash extends JavaCameraView
 {
     private boolean flashState = false;
 
-    public JavaCameraViewWithFlash(Context context, int cameraId) {
+    public JavaCameraViewWithFlash(Context context, int cameraId)
+    {
         super(context, cameraId);
     }
 
-    public JavaCameraViewWithFlash(Context context, AttributeSet attrs) {
+    public JavaCameraViewWithFlash(Context context, AttributeSet attrs)
+    {
         super(context, attrs);
     }
 
@@ -33,6 +35,7 @@ public class JavaCameraViewWithFlash extends JavaCameraView
             mCamera.setParameters(params);
         }
     }
+
     public void toggleFlashState()
     {
         setFlashState(!flashState);

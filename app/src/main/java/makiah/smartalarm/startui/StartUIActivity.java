@@ -14,7 +14,7 @@ public class StartUIActivity extends Activity
     protected void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.start_ui_activity);
+        setContentView(R.layout.activity_start_ui);
     }
 
     /**

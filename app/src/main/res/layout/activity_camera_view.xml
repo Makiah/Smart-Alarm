@@ -1,15 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <android.support.constraint.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    tools:context="makiah.smartalarm.cameraview.CameraViewActivity"
-    tools:layout_editor_absoluteY="81dp"
-    tools:layout_editor_absoluteX="0dp">
+    android:layout_height="match_parent">
 
-    <makiah.smartalarm.JavaCameraViewWithFlash
+    <makiah.smartalarm.cameraview.JavaCameraViewWithFlash
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
         android:visibility="gone"
@@ -23,13 +18,7 @@
         android:layout_width="0dp"
         android:layout_height="75dp"
         android:layout_marginBottom="16dp"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        tools:layout_constraintRight_creator="1"
         android:layout_marginStart="9dp"
-        android:layout_marginEnd="9dp"
-        tools:layout_constraintLeft_creator="1" />
-
+        android:layout_marginEnd="9dp" />
 
 </android.support.constraint.ConstraintLayout>
