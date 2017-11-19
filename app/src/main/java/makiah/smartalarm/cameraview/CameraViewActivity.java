@@ -3,7 +3,6 @@ package makiah.smartalarm.cameraview;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
-import android.view.MenuItem;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.WindowManager;
@@ -17,11 +16,25 @@ import org.opencv.android.OpenCVLoader;
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
+import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
+
+import java.util.ArrayList;
 
 import makiah.smartalarm.R;
 
-public class CameraViewActivity extends AppCompatActivity implements CvCameraViewListener2 {
+import static org.opencv.core.CvType.CV_8UC3;
+
+public class CameraViewActivity extends AppCompatActivity implements CvCameraViewListener2
+{
+    // Where REQUEST means that it will wait for new requests
+    enum CameraMode { REQUEST, CONTINUOUS }
+    private CameraMode currentCameraMode = CameraMode.CONTINUOUS;
+    private boolean frameRequested = false;
+    private ArrayList<CameraViewFrameReceiver> frameCallbacks = new ArrayList<>(); // It's possible that multiple might call.
+
+    // This does a lot of the grunt work involved in the sleep processing.
+    private RestlessnessDetector restlessnessDetector;
 
     private static final String TAG = "CameraViewActivity";
 
@@ -29,14 +42,8 @@ public class CameraViewActivity extends AppCompatActivity implements CvCameraVie
     private CameraBridgeViewBase cameraBridgeViewBase;
     private JavaCameraViewWithFlash javaCameraView;
 
-    // Used in Camera selection from menu (when implemented)
-    private boolean              mIsJavaCamera = true;
-    private MenuItem             mItemSwitchCamera = null;
-
     // These variables are used (at the moment) to fix camera orientation from 270degree to 0degree
-    Mat mRgba;
-    Mat mRgbaF;
-    Mat mRgbaT;
+    private Mat cameraViewMat, mRgbaF, mRgbaT;
 
     /**
      * The callback for when OpenCV has finished initialization.
@@ -63,7 +70,8 @@ public class CameraViewActivity extends AppCompatActivity implements CvCameraVie
     }
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(Bundle savedInstanceState)
+    {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_camera_view);
 
@@ -76,6 +84,9 @@ public class CameraViewActivity extends AppCompatActivity implements CvCameraVie
         cameraBridgeViewBase = javaCameraView;
         cameraBridgeViewBase.setVisibility(SurfaceView.VISIBLE);
         cameraBridgeViewBase.setCvCameraViewListener(this);
+
+        // Start the restlessness detector.
+        restlessnessDetector = new RestlessnessDetector();
     }
 
     @Override
@@ -107,13 +118,13 @@ public class CameraViewActivity extends AppCompatActivity implements CvCameraVie
 
     public void onCameraViewStarted(int width, int height) {
 
-        mRgba = new Mat(height, width, CvType.CV_8UC4);
+        cameraViewMat = new Mat(height, width, CvType.CV_8UC4);
         mRgbaF = new Mat(height, width, CvType.CV_8UC4);
         mRgbaT = new Mat(width, width, CvType.CV_8UC4);
     }
 
     public void onCameraViewStopped() {
-        mRgba.release();
+        cameraViewMat.release();
     }
 
     /**
@@ -125,16 +136,38 @@ public class CameraViewActivity extends AppCompatActivity implements CvCameraVie
      */
     public Mat onCameraFrame(CvCameraViewFrame inputFrame)
     {
+        // Pass back the last frame if we're in the request mode and we don't want a new frame.
+        if (currentCameraMode == CameraMode.REQUEST && !frameRequested)
+        {
+            // In case not even a single picture has been taken.
+            if (cameraViewMat == null)
+                cameraViewMat = new Mat(320, 240, CV_8UC3, new Scalar(0, 0, 0));
+
+            return cameraViewMat;
+        }
+
         // TODO Auto-generated method stub
-        mRgba = inputFrame.rgba();
+        cameraViewMat = inputFrame.rgba();
 
-        // Rotate mRgba 90 degrees
-        Core.transpose(mRgba, mRgbaT);
-        Imgproc.resize(mRgbaT, mRgbaF, mRgbaF.size(), 0,0, 0);
-        Core.flip(mRgbaF, mRgba, 1 );
+        // Rotate cameraViewMat 90 degrees
+        Core.transpose(cameraViewMat, mRgbaT);
+        Imgproc.resize(mRgbaT, mRgbaF, mRgbaF.size(), 0, 0, 0);
+        Core.flip(mRgbaF, cameraViewMat, 1);
 
-        return mRgba; // This function currently just returns the pixel array it sees.
+        if (currentCameraMode == CameraMode.REQUEST && frameRequested)
+        {
+            // Provide all callbacks the frame they requested.
+            for (CameraViewFrameReceiver callback : frameCallbacks)
+                callback.provide(cameraViewMat);
+
+            // Remove all callbacks.
+            frameCallbacks.clear();
+        }
+
+        return cameraViewMat; // This function currently just returns the pixel array it sees.
     }
+
+    /// Custom methods I added for this app ///
 
     /**
      * A button on the UI triggers this function.
@@ -143,5 +176,22 @@ public class CameraViewActivity extends AppCompatActivity implements CvCameraVie
     public void toggleCameraFlash(View currentView)
     {
         javaCameraView.toggleFlashState();
+    }
+
+    public void setCameraMode(CameraMode mode)
+    {
+        if (currentCameraMode == mode)
+            return;
+
+        currentCameraMode = mode;
+
+        if (currentCameraMode == CameraMode.REQUEST)
+            frameRequested = false;
+    }
+
+    public void requestFrame(CameraViewFrameReceiver callback)
+    {
+        frameRequested = true;
+        frameCallbacks.add(callback);
     }
 }
