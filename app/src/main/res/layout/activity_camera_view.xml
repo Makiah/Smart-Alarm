@@ -1,13 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.constraint.ConstraintLayout
+<LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <TextView
+        android:id="@+id/debugtextview"
+        android:layout_width="fill_parent"
+        android:layout_height="0dp"
+        android:layout_weight="12"
+        android:textSize="6sp"
+        android:text="This is the debug panel" />
 
     <makiah.smartalarm.cameraview.JavaCameraViewWithFlash
         android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
-        android:visibility="gone"
+        android:layout_height="0dp"
+        android:layout_weight="16"
         android:id="@+id/show_camera_activity_java_surface_view"/>
 
     <Button
@@ -15,10 +24,8 @@
         android:onClick="toggleCameraFlash"
         android:text="Toggle Flash"
         android:visibility="visible"
-        android:layout_width="0dp"
+        android:layout_width="fill_parent"
         android:layout_height="75dp"
-        android:layout_marginBottom="16dp"
-        android:layout_marginStart="9dp"
-        android:layout_marginEnd="9dp" />
+        android:layout_weight="1"/>
 
-</android.support.constraint.ConstraintLayout>
+</LinearLayout>
