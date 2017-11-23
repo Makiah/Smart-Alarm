@@ -7,6 +7,8 @@ public class ProcessConsole
     public final String processName;
     public String[] processData;
 
+    private boolean currentlyActive;
+
     private ArrayList<ProcessConsole> parentList;
 
     public ProcessConsole (String processName, ArrayList<ProcessConsole> parentList)
@@ -16,6 +18,12 @@ public class ProcessConsole
 
         this.parentList = parentList;
         this.parentList.add (this);
+        currentlyActive = true;
+    }
+
+    public boolean isCurrentlyActive()
+    {
+        return currentlyActive;
     }
 
     public void write(String... data)
@@ -25,10 +33,18 @@ public class ProcessConsole
 
     public void destroy ()
     {
+        if (!currentlyActive)
+            return;
+        currentlyActive = false;
+
         parentList.remove (this);
     }
     public void revive ()
     {
+        if (currentlyActive)
+            return;
+        currentlyActive = true;
+
         parentList.add (this);
     }
 }

@@ -3,6 +3,14 @@ package makiah.smartalarm.threading;
 import android.os.AsyncTask;
 import android.util.Log;
 
+import makiah.smartalarm.logging.OnScreenLog;
+import makiah.smartalarm.logging.ProcessConsole;
+
+
+// TODO Add old method of a ProcessConsole for every ParallelTask
+
+
+
 /**
  * NiFTComplexTask is an easier method of working with AsyncTasks, which provides a convenient process console and a
  * bunch of other functionality to the table for an opmode which requires a bunch of advanced tooling.
@@ -13,10 +21,13 @@ import android.util.Log;
  */
 public abstract class ParallelTask extends AsyncTask <Void, Void, Void>
 {
-    private final static String TAG = "ParallelTask";
-
+    // Task properties.
     public final Flow flow;
     public final String taskName;
+
+    // Log properties.
+    private OnScreenLog screenLog;
+    private ProcessConsole processConsole;
 
     /**
      * Creates a task with a given name and a console with that same name.
@@ -33,9 +44,38 @@ public abstract class ParallelTask extends AsyncTask <Void, Void, Void>
     }
 
     /**
-     * Runs the onDoTask() method while catching potential InterruptedExceptions, which indicate that the user has requested a stop which was thrown in NiFTFlow.
+     * Tells this task where to display output (on screen), to which the task responds by creating
+     * a new process console.
+     * @param screenLog
+     */
+    public void provideOnScreenLog(OnScreenLog screenLog)
+    {
+        this.processConsole = screenLog.newProcessConsole(taskName);
+    }
+
+    /**
+     * Parallel Task instances should use this instead of trying to write to the process console on
+     * their own.
      *
-     * Runs the onQuitAndDestroyConsole() method on catching an InterruptedException, which destroys the process console and ends the program.
+     * @param lines  Lines to log.
+     */
+    protected void logSequentialLines(String... lines)
+    {
+        if (screenLog != null)
+            screenLog.lines(lines);
+    }
+    protected void logLinesToProcessConsole(String... lines)
+    {
+        if (processConsole != null)
+            processConsole.write(lines);
+    }
+
+    /**
+     * Runs the onDoTask() method while catching potential InterruptedExceptions, which indicate
+     * that the user has requested a stop which was thrown in Flow.
+     *
+     * Runs the onQuitAndDestroyConsole() method on catching an InterruptedException, which
+     * destroys the process console and ends the program.
      *
      * @param params can be safely ignored.
      */
@@ -46,15 +86,15 @@ public abstract class ParallelTask extends AsyncTask <Void, Void, Void>
         {
             onDoTask ();
         }
-        catch (InterruptedException e) //Upon stop requested by NiFTFlow
+        catch (InterruptedException e) //Upon stop requested by Flow
         {
-            Log.i(TAG, taskName + " task was stopped!");
+            Log.i(taskName, "Stopped task!");
         }
         catch(Exception e)
         {
             // Yes, I know this is bad, but it prevents crashes (which are worse).
-            Log.i(TAG, "Something weird happened!" + e.getMessage());
-            Log.i(TAG, "Happened at " + getStackTrace(e));
+            Log.i(taskName, "Something weird happened!" + e.getMessage());
+            Log.i(taskName, "Stack trace: " + getStackTrace(e));
         }
         finally
         {
@@ -96,7 +136,15 @@ public abstract class ParallelTask extends AsyncTask <Void, Void, Void>
     {
         onQuitTask ();
 
-        Log.i(TAG, "Quit parallel task");
+        Log.i(taskName, "Quit " + taskName);
+
+        if (processConsole == null)
+            return;
+
+        if (processConsole.isCurrentlyActive())
+            processConsole.destroy();
+
+        processConsole = null;
     }
 
     /**
@@ -113,10 +161,16 @@ public abstract class ParallelTask extends AsyncTask <Void, Void, Void>
         try
         {
             this.executeOnExecutor (AsyncTask.THREAD_POOL_EXECUTOR);
+
+            if (processConsole == null)
+                return;
+
+            if (!processConsole.isCurrentlyActive())
+                processConsole.revive();
         }
         catch (Exception e)
         {
-            Log.i(TAG, "Uh oh! " + taskName + " can't run!" + e.getMessage ());
+            Log.i(taskName, "Uh oh! " + taskName + " can't run!" + e.getMessage ());
         }
     }
     /**
@@ -127,10 +181,16 @@ public abstract class ParallelTask extends AsyncTask <Void, Void, Void>
         try
         {
             this.cancel (true);
+
+            if (processConsole == null)
+                return;
+
+            if (processConsole.isCurrentlyActive())
+                processConsole.destroy();
         }
         catch (Exception e) // Dirty but prevents unwanted program crashes.
         {
-            Log.i(TAG, "Uh oh! " + taskName + " can't stop!" + e.getMessage ());
+            Log.i(taskName, "Uh oh! " + taskName + " can't stop!" + e.getMessage ());
         }
     }
 }

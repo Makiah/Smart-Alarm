@@ -1,5 +1,7 @@
 package makiah.smartalarm.cameraview;
 
+import org.opencv.core.Core;
+import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 
 import makiah.smartalarm.threading.ParallelTask;
@@ -21,7 +23,6 @@ import makiah.smartalarm.threading.ParallelTask;
 public class RestlessnessDetector extends ParallelTask implements CameraViewFrameReceiver
 {
     private final CameraViewActivity cameraViewActivity;
-    private final CameraViewLogger logger;
 
     public RestlessnessDetector(final CameraViewActivity cameraViewActivity)
     {
@@ -34,16 +35,49 @@ public class RestlessnessDetector extends ParallelTask implements CameraViewFram
         this.cameraViewActivity = cameraViewActivity;
         this.cameraViewActivity.setCameraMode(CameraViewActivity.CameraMode.REQUEST);
 
-        this.logger = logger;
+        // Tell the base task that we've got a logger.
+        provideOnScreenLog(logger);
 
         this.run();
     }
 
+    // The callback for images from the primary camera view activity.
     private Mat newFrame = null;
     @Override
     public void provide(Mat frame)
     {
         newFrame = frame;
+    }
+
+    /**
+     * This is where a lot of the OpenCV work comes into play.  Heavily aided by this
+     * stackoverflow post: https://stackoverflow.com/questions/27035672/cv-extract-differences-between-two-images
+     */
+    private void analyzeImages(Mat mat1, Mat mat2)
+    {
+        Mat diffImage = Mat.zeros(mat1.rows(), mat1.cols(), CvType.CV_8UC1);
+
+        // Get the slightest differences between the two images.
+        Core.absdiff(mat1, mat2, diffImage);
+
+        // Figure out what's actually different (absdiff is just a bit too sensitive)
+        double threshold = 30.0;
+        Mat thresholdDifferences = Mat.zeros(mat1.rows(), mat1.cols(), CvType.CV_8UC1);
+
+        for (int j = 0; j < diffImage.rows(); j++)
+        {
+            for (int i = 0; i < diffImage.cols(); i++)
+            {
+                double[] pixel = diffImage.get(j, i);
+
+                double difference = Math.sqrt(Math.pow(pixel[0], 2) + Math.pow(pixel[1], 2) + Math.pow(pixel[2], 2));
+
+                if (difference > threshold)
+                {
+                    thresholdDifferences.put(j, i, 255, 255, 255);
+                }
+            }
+        }
     }
 
     @Override
@@ -55,14 +89,14 @@ public class RestlessnessDetector extends ParallelTask implements CameraViewFram
         {
             // Turns on flash.
             cameraViewActivity.setFlashState(true);
-            logger.lines("Turned flash on");
+            logSequentialLines("Turned flash on");
 
             // Ensures that flash has time to light room.
             flow.msPause(2000);
 
             // Asks for a new frame from the activity.
             cameraViewActivity.requestFrame(this);
-            logger.lines("Requested frame");
+            logSequentialLines("Requested frame");
 
             // Wait for the new frame to show up.
             while (newFrame == null)
@@ -72,11 +106,11 @@ public class RestlessnessDetector extends ParallelTask implements CameraViewFram
             Mat currentFrame = newFrame;
             newFrame = null;
 
-            logger.lines("Got frame");
+            logSequentialLines("Got frame");
 
             // Turn off the camera flash.
             cameraViewActivity.setFlashState(false);
-            logger.lines("Turned flash off");
+            logSequentialLines("Turned flash off");
 
             // TODO Analyze currentFrame
 
