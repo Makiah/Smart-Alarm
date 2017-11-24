@@ -7,6 +7,8 @@ import android.view.SurfaceView;
 import android.view.View;
 import android.view.WindowManager;
 
+import com.makiah.makiahsandroidlib.logging.OnScreenLogParent;
+
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.CameraBridgeViewBase.CvCameraViewFrame;
@@ -22,7 +24,6 @@ import org.opencv.imgproc.Imgproc;
 import java.util.ArrayList;
 
 import makiah.smartalarm.R;
-import makiah.smartalarm.logging.OnScreenLogParent;
 
 import static org.opencv.core.CvType.CV_8UC3;
 

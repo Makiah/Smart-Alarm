@@ -1,10 +1,12 @@
 package makiah.smartalarm.cameraview;
 
+import com.makiah.makiahsandroidlib.threading.ParallelTask;
+
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 
-import makiah.smartalarm.threading.ParallelTask;
+
 
 /**
  * This class is where most of the code goes for detecting whether the person in question is

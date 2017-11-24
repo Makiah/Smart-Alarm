@@ -2,8 +2,9 @@ package makiah.smartalarm.cameraview;
 
 import android.widget.TextView;
 
+import com.makiah.makiahsandroidlib.logging.OnScreenLog;
+
 import makiah.smartalarm.R;
-import makiah.smartalarm.logging.OnScreenLog;
 
 public class CameraViewLogger extends OnScreenLog
 {
