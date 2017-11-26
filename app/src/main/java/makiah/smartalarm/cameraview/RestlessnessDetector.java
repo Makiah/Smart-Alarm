@@ -1,12 +1,10 @@
 package makiah.smartalarm.cameraview;
 
-import com.makiah.makiahsandroidlib.threading.ParallelTask;
-
+import com.makiah.makiahsandroidlib.logging.LoggingBase;
+import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
-
-
 
 /**
  * This class is where most of the code goes for detecting whether the person in question is
@@ -22,40 +20,20 @@ import org.opencv.core.Mat;
  *      process doesn't need to occur super quickly), and decides whether it needs another picture
  *      to verify or if it's certain this showed movement (or that it didn't).
  */
-public class RestlessnessDetector extends ParallelTask implements CameraViewFrameReceiver
+public class RestlessnessDetector implements CameraBridgeViewBase.CvCameraViewListener2
 {
-    private final CameraViewActivity cameraViewActivity;
+    private LoggingBase logger;
 
-    public RestlessnessDetector(final CameraViewActivity cameraViewActivity)
+    public RestlessnessDetector(LoggingBase logger)
     {
-        this(cameraViewActivity, null);
-    }
-    public RestlessnessDetector(final CameraViewActivity cameraViewActivity, final CameraViewLogger logger)
-    {
-        super(cameraViewActivity, "Restlessness Detector");
-
-        this.cameraViewActivity = cameraViewActivity;
-        this.cameraViewActivity.setCameraMode(CameraViewActivity.CameraMode.REQUEST);
-
-        // Tell the base task that we've got a logger.
-        provideOnScreenLog(logger);
-
-        this.run();
-    }
-
-    // The callback for images from the primary camera view activity.
-    private Mat newFrame = null;
-    @Override
-    public void provide(Mat frame)
-    {
-        newFrame = frame;
+        this.logger = logger;
     }
 
     /**
      * This is where a lot of the OpenCV work comes into play.  Heavily aided by this
      * stackoverflow post: https://stackoverflow.com/questions/27035672/cv-extract-differences-between-two-images
      */
-    private void analyzeImages(Mat mat1, Mat mat2)
+    private Mat analyzeImages(Mat mat1, Mat mat2)
     {
         Mat diffImage = Mat.zeros(mat1.rows(), mat1.cols(), CvType.CV_8UC1);
 
@@ -63,7 +41,7 @@ public class RestlessnessDetector extends ParallelTask implements CameraViewFram
         Core.absdiff(mat1, mat2, diffImage);
 
         // Figure out what's actually different (absdiff is just a bit too sensitive)
-        double threshold = 30.0;
+        double threshold = 50.0;
         Mat thresholdDifferences = Mat.zeros(mat1.rows(), mat1.cols(), CvType.CV_8UC1);
 
         for (int j = 0; j < diffImage.rows(); j++)
@@ -80,44 +58,48 @@ public class RestlessnessDetector extends ParallelTask implements CameraViewFram
                 }
             }
         }
+
+        return thresholdDifferences;
     }
 
+    /**
+     * Initialize all mats here...
+     *
+     * @param width -  the width of the frames that will be delivered
+     * @param height - the height of the frames that will be delivered
+     */
     @Override
-    protected void onDoTask() throws InterruptedException
+    public void onCameraViewStarted(int width, int height) {
+    }
+
+    /**
+     * And deinit them here.
+     */
+    @Override
+    public void onCameraViewStopped() {
+    }
+
+    // The last frame returned by the camera (for comparison).
+    private Mat lastFrame = null;
+
+    /**
+     * Where all of the image processing goes.
+     *
+     * @param currentView the current view of the camera.
+     * @return
+     */
+    @Override
+    public Mat onCameraFrame(CameraBridgeViewBase.CvCameraViewFrame currentView)
     {
-        flow.msPause(2000);
-
-        while (true)
+        if (lastFrame == null)
         {
-            // Turns on flash.
-            cameraViewActivity.setFlashState(true);
-            logSequentialLines("Turned flash on");
-
-            // Ensures that flash has time to light room.
-            flow.msPause(2000);
-
-            // Asks for a new frame from the activity.
-            cameraViewActivity.requestFrame(this);
-            logSequentialLines("Requested frame");
-
-            // Wait for the new frame to show up.
-            while (newFrame == null)
-                flow.yield();
-
-            // Prevent infinite loop.
-            Mat currentFrame = newFrame;
-            newFrame = null;
-
-            logSequentialLines("Got frame");
-
-            // Turn off the camera flash.
-            cameraViewActivity.setFlashState(false);
-            logSequentialLines("Turned flash off");
-
-            // TODO Analyze currentFrame
-
-            // Wait for a grace period.
-            flow.msPause(6000);
+            lastFrame = currentView.rgba().clone();
+            return lastFrame;
         }
+
+        Mat diff = analyzeImages(currentView.rgba(), lastFrame);
+        lastFrame = currentView.rgba().clone();
+
+        return diff;
     }
 }
