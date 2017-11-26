@@ -1,4 +1,4 @@
-package makiah.smartalarm.cameraview;
+package makiah.smartalarm.opencvutilities;
 
 import android.content.Context;
 import android.hardware.Camera;

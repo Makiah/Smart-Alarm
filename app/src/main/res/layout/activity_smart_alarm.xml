@@ -16,7 +16,7 @@
             android:layout_width="fill_parent"
             android:layout_height="0dp"
             android:layout_weight="12"
-            android:textSize="6sp"
+            android:textSize="9sp"
             android:text="This is the debug panel" />
 
         <Button
@@ -30,11 +30,23 @@
 
     </LinearLayout>
 
-
-    <makiah.smartalarm.cameraview.JavaCameraViewWithFlash
-        android:layout_height="fill_parent"
+    <RelativeLayout
         android:layout_width="0dp"
-        android:layout_weight="5"
-        android:id="@+id/show_camera_activity_java_surface_view"/>
+        android:layout_height="fill_parent"
+        android:layout_weight="5">
 
+        <makiah.smartalarm.opencvutilities.JavaCameraViewWithFlash
+            android:layout_height="fill_parent"
+            android:layout_width="fill_parent"
+            android:id="@+id/show_camera_activity_java_surface_view"/>
+
+        <Button
+            android:layout_width="150dp"
+            android:layout_height="75dp"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentRight="true"
+            android:text="Set Alarm"
+            android:onClick="startAlarmSetter"/>
+
+    </RelativeLayout>
 </LinearLayout>

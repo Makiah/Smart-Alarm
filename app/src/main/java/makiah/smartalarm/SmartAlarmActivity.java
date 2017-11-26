@@ -1,5 +1,6 @@
-package makiah.smartalarm.cameraview;
+package makiah.smartalarm;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -8,29 +9,20 @@ import android.view.View;
 import android.view.WindowManager;
 
 import com.makiah.makiahsandroidlib.logging.OnScreenLogParent;
-import com.makiah.makiahsandroidlib.threading.Flow;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
-import org.opencv.android.CameraBridgeViewBase.CvCameraViewFrame;
-import org.opencv.android.CameraBridgeViewBase.CvCameraViewListener2;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
-import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
-import org.opencv.core.Scalar;
-import org.opencv.imgproc.Imgproc;
 
-import java.util.ArrayList;
+import makiah.smartalarm.alarmsetter.AlarmSetterActivity;
+import makiah.smartalarm.opencvutilities.JavaCameraViewWithFlash;
 
-import makiah.smartalarm.R;
-
-import static org.opencv.core.CvType.CV_8UC3;
-
-public class CameraViewActivity extends AppCompatActivity implements OnScreenLogParent, CameraBridgeViewBase.CvCameraViewListener
+public class SmartAlarmActivity extends AppCompatActivity implements OnScreenLogParent, CameraBridgeViewBase.CvCameraViewListener
 {
-    private static final String TAG = "CameraViewActivity";
+    private static final String TAG = "SmartAlarmActivity";
 
     // The minimum camera pixel dimensions that will be requested by this app.
     private static final int FRAME_WIDTH_REQUEST = 176, FRAME_HEIGHT_REQUEST = 144;
@@ -50,7 +42,7 @@ public class CameraViewActivity extends AppCompatActivity implements OnScreenLog
     private JavaCameraViewWithFlash javaCameraView;
 
     // This does a lot of the grunt work involved in the sleep processing.
-    private CameraViewLogger onScreenLog;
+    private SmartAlarmLog onScreenLog;
 
     /**
      * The callback for when OpenCV has finished initialization.
@@ -72,8 +64,14 @@ public class CameraViewActivity extends AppCompatActivity implements OnScreenLog
         }
     };
 
-    public CameraViewActivity() {
-        Log.i(TAG, "Instantiated new " + this.getClass());
+    /**
+     * Used by the UI for when the user wants to set their alarm for some given time.
+     * @param currentView
+     */
+    public void startAlarmSetter(View currentView)
+    {
+        Intent intent = new Intent(this, AlarmSetterActivity.class);
+        startActivity(intent);
     }
 
     /**
@@ -85,7 +83,7 @@ public class CameraViewActivity extends AppCompatActivity implements OnScreenLog
     protected void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_camera_view);
+        setContentView(R.layout.activity_smart_alarm);
 
         taskActive = true;
 
@@ -96,7 +94,7 @@ public class CameraViewActivity extends AppCompatActivity implements OnScreenLog
         javaCameraView = (JavaCameraViewWithFlash) findViewById(R.id.show_camera_activity_java_surface_view);
 
         // Required components which control app stuff.
-        onScreenLog = new CameraViewLogger(this);
+        onScreenLog = new SmartAlarmLog(this);
 
         // Set camera view base properties and direct frames to the restlessness detector.
         cameraBridgeViewBase = javaCameraView;
@@ -139,6 +137,9 @@ public class CameraViewActivity extends AppCompatActivity implements OnScreenLog
         }
 
         taskActive = true;
+
+        // Restart the on screen log.
+        onScreenLog.run();
     }
 
     /**
