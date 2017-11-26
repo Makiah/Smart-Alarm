@@ -32,7 +32,11 @@ public class CameraViewActivity extends AppCompatActivity implements OnScreenLog
 {
     private static final String TAG = "CameraViewActivity";
 
+    // The minimum camera pixel dimensions that will be requested by this app.
     private static final int FRAME_WIDTH_REQUEST = 176, FRAME_HEIGHT_REQUEST = 144;
+
+    // The area of the camera which has to be obscured with noise to reset a sleep cycle.
+    private static final double RESTLESSNESS_NOISE_SATURATION_THRESHOLD = .3;
 
     // Stuff for the subtasks.
     private boolean taskActive = true;
@@ -232,9 +236,13 @@ public class CameraViewActivity extends AppCompatActivity implements OnScreenLog
                     onScreenLog.lines("Analyzing camera frame...");
 
                     // Figure out what's actually different (absdiff is just a bit too sensitive)
-                    double threshold = 50.0;
+                    double threshold = 100.0;
                     thresholdDifferences = Mat.zeros(current.rows(), current.cols(), CvType.CV_8UC1);
 
+                    // The number of pixels above the threshold.
+                    int numSaturated = 0;
+
+                    // Manually go through the pixels and determine whether or not I'm moving.
                     for (int rowIndex = 0; rowIndex < current.rows(); rowIndex++)
                     {
                         for (int colIndex = 0; colIndex < current.cols(); colIndex++)
@@ -242,30 +250,40 @@ public class CameraViewActivity extends AppCompatActivity implements OnScreenLog
                             double[] currentPixel = current.get(rowIndex, colIndex);
                             double[] previousPixel = previous.get(rowIndex, colIndex);
 
-                            try {
-                                double totalDifference = 0;
-                                for (int rgbIndex = 0; rgbIndex < 3; rgbIndex++)
-                                    totalDifference += Math.pow((currentPixel[rgbIndex] - previousPixel[rgbIndex]), 2);
-                                totalDifference = Math.sqrt(totalDifference);
+                            // Check using the Pythagorean theorem.
+                            double totalDifference = 0;
+                            for (int rgbIndex = 0; rgbIndex < 3; rgbIndex++)
+                                totalDifference += Math.pow((currentPixel[rgbIndex] - previousPixel[rgbIndex]), 2);
+                            totalDifference = Math.sqrt(totalDifference);
 
-                                if (totalDifference > threshold)
-                                    thresholdDifferences.put(rowIndex, colIndex, 255, 255, 255);
-                            } catch (Exception e)
+                            // In order to visualize the noise in question.
+                            if (totalDifference > threshold)
                             {
-                                onScreenLog.lines("Issue: " + e.getMessage());
-
-                                return inputFrame;
+                                thresholdDifferences.put(rowIndex, colIndex, 255, 255, 255);
+                                numSaturated++;
                             }
                         }
                     }
 
+                    // Remember the last image.
                     inputFrame.copyTo(previous);
 
-                    // TODO Find scheduling time
-                    Thread.sleep(3000);
+                    // Determine whether the person is stirring (simple noise detection)
+                    if ((double)(numSaturated) / (current.rows() * current.cols()) > RESTLESSNESS_NOISE_SATURATION_THRESHOLD)
+                    {
+                        onScreenLog.lines("Would now reset alarm based on sleep cycle");
 
+                        // TODO Find scheduling time
+                        Thread.sleep(3000);
+                    } else
+                    {
+                        // Wait a while longer (person's probably asleep).
+                        Thread.sleep(15000);
+                    }
+
+                    // Start the flash again.
                     setFlashState(true);
-                    Thread.sleep(1000);
+                    Thread.sleep(500);
 
                     // This display is on a noticeable delay, but that's the price I gotta pay for this to be synchronous.
                     return thresholdDifferences;
