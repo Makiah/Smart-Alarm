@@ -8,6 +8,7 @@ import android.view.View;
 import android.view.WindowManager;
 
 import com.makiah.makiahsandroidlib.logging.OnScreenLogParent;
+import com.makiah.makiahsandroidlib.threading.Flow;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
@@ -50,9 +51,6 @@ public class CameraViewActivity extends AppCompatActivity implements OnScreenLog
     // This does a lot of the grunt work involved in the sleep processing.
     private CameraViewLogger onScreenLog;
     private RestlessnessDetector restlessnessDetector;
-
-    // These variables are used (at the moment) to fix camera orientation from 270degree to 0degree
-    private Mat cameraViewMat, mRgbaF, mRgbaT;
 
     /**
      * The callback for when OpenCV has finished initialization.
@@ -105,7 +103,8 @@ public class CameraViewActivity extends AppCompatActivity implements OnScreenLog
         cameraBridgeViewBase = javaCameraView;
         cameraBridgeViewBase.enableFpsMeter();
         cameraBridgeViewBase.setVisibility(SurfaceView.VISIBLE);
-        cameraBridgeViewBase.setMaxFrameSize(FRAME_WIDTH_REQUEST, FRAME_HEIGHT_REQUEST);
+        cameraBridgeViewBase.setMinimumHeight(FRAME_HEIGHT_REQUEST);
+        cameraBridgeViewBase.setMinimumWidth(FRAME_WIDTH_REQUEST);
 
         cameraBridgeViewBase.setCvCameraViewListener(restlessnessDetector);
     }
