@@ -28,7 +28,7 @@ import makiah.smartalarm.R;
 
 import static org.opencv.core.CvType.CV_8UC3;
 
-public class CameraViewActivity extends AppCompatActivity implements OnScreenLogParent
+public class CameraViewActivity extends AppCompatActivity implements OnScreenLogParent, CameraBridgeViewBase.CvCameraViewListener
 {
     private static final String TAG = "CameraViewActivity";
 
@@ -45,12 +45,8 @@ public class CameraViewActivity extends AppCompatActivity implements OnScreenLog
     private CameraBridgeViewBase cameraBridgeViewBase;
     private JavaCameraViewWithFlash javaCameraView;
 
-    // Where onNewFrame gets called.
-    private CvCameraViewListener2 currentCamViewListener;
-
     // This does a lot of the grunt work involved in the sleep processing.
     private CameraViewLogger onScreenLog;
-    private RestlessnessDetector restlessnessDetector;
 
     /**
      * The callback for when OpenCV has finished initialization.
@@ -97,7 +93,6 @@ public class CameraViewActivity extends AppCompatActivity implements OnScreenLog
 
         // Required components which control app stuff.
         onScreenLog = new CameraViewLogger(this);
-        restlessnessDetector = new RestlessnessDetector(onScreenLog);
 
         // Set camera view base properties and direct frames to the restlessness detector.
         cameraBridgeViewBase = javaCameraView;
@@ -106,7 +101,7 @@ public class CameraViewActivity extends AppCompatActivity implements OnScreenLog
         cameraBridgeViewBase.setMinimumHeight(FRAME_HEIGHT_REQUEST);
         cameraBridgeViewBase.setMinimumWidth(FRAME_WIDTH_REQUEST);
 
-        cameraBridgeViewBase.setCvCameraViewListener(restlessnessDetector);
+        cameraBridgeViewBase.setCvCameraViewListener(this);
     }
 
     /**
@@ -175,12 +170,114 @@ public class CameraViewActivity extends AppCompatActivity implements OnScreenLog
         toggleCameraFlash();
     }
 
+    // The last frame returned by the camera (for comparison).
+    private Mat current, previous, thresholdDifferences;
+    private enum PictureState {FIRST_FLASH, FIRST_ANCHOR, TYPICAL_PROGRESSION}
+    private PictureState currentPictureState = PictureState.FIRST_FLASH;
+
     /**
-     * Tells the
-     * @param listener
+     * Initialize all mats here...
+     *
+     * @param width -  the width of the frames that will be delivered
+     * @param height - the height of the frames that will be delivered
      */
-    public void setFrameListener(CvCameraViewListener2 listener)
+    @Override
+    public void onCameraViewStarted(int width, int height) {
+        current = new Mat(height, width, CvType.CV_8UC1);
+        previous = new Mat(height, width, CvType.CV_8UC1);
+        currentPictureState = PictureState.FIRST_FLASH;
+    }
+
+    /**
+     * And deinit them here.
+     */
+    @Override
+    public void onCameraViewStopped() {
+        thresholdDifferences.release();
+        previous.release();
+    }
+
+    /**
+     * Where all of the image processing goes.
+     */
+    @Override
+    public Mat onCameraFrame(Mat inputFrame)
     {
-        cameraBridgeViewBase.setCvCameraViewListener(listener);
+        try
+        {
+            switch(currentPictureState)
+            {
+                case FIRST_FLASH:
+                    setFlashState(true);
+                    Thread.sleep(1000);
+
+                    // Return empty.
+                    onScreenLog.lines("First flash complete.");
+                    currentPictureState = PictureState.FIRST_ANCHOR;
+                    return inputFrame;
+
+                case FIRST_ANCHOR:
+                    inputFrame.copyTo(previous);
+
+                    // Return empty.
+                    onScreenLog.lines("First anchor complete.");
+                    currentPictureState = PictureState.TYPICAL_PROGRESSION;
+                    return inputFrame;
+
+                case TYPICAL_PROGRESSION:
+                    setFlashState(false);
+
+                    inputFrame.copyTo(current);
+
+                    onScreenLog.lines("Analyzing camera frame...");
+
+                    // Figure out what's actually different (absdiff is just a bit too sensitive)
+                    double threshold = 50.0;
+                    thresholdDifferences = Mat.zeros(current.rows(), current.cols(), CvType.CV_8UC1);
+
+                    for (int rowIndex = 0; rowIndex < current.rows(); rowIndex++)
+                    {
+                        for (int colIndex = 0; colIndex < current.cols(); colIndex++)
+                        {
+                            double[] currentPixel = current.get(rowIndex, colIndex);
+                            double[] previousPixel = previous.get(rowIndex, colIndex);
+
+                            try {
+                                double totalDifference = 0;
+                                for (int rgbIndex = 0; rgbIndex < 3; rgbIndex++)
+                                    totalDifference += Math.pow((currentPixel[rgbIndex] - previousPixel[rgbIndex]), 2);
+                                totalDifference = Math.sqrt(totalDifference);
+
+                                if (totalDifference > threshold)
+                                    thresholdDifferences.put(rowIndex, colIndex, 255, 255, 255);
+                            } catch (Exception e)
+                            {
+                                onScreenLog.lines("Issue: " + e.getMessage());
+
+                                return inputFrame;
+                            }
+                        }
+                    }
+
+                    inputFrame.copyTo(previous);
+
+                    // TODO Find scheduling time
+                    Thread.sleep(3000);
+
+                    setFlashState(true);
+                    Thread.sleep(1000);
+
+                    // This display is on a noticeable delay, but that's the price I gotta pay for this to be synchronous.
+                    return thresholdDifferences;
+            }
+
+            // Take a new picture!
+
+        } catch (InterruptedException e)
+        {
+            onScreenLog.lines("Interrupted!");
+        }
+
+        return null; // Won't get called unless there's an exception.
     }
 }
