@@ -14,8 +14,10 @@ import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
+import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
+import org.opencv.imgproc.Imgproc;
 
 import makiah.smartalarm.alarmsetter.AlarmSetterActivity;
 import makiah.smartalarm.opencvutilities.JavaCameraViewWithFlash;
@@ -176,7 +178,7 @@ public class SmartAlarmActivity extends AppCompatActivity implements OnScreenLog
     }
 
     // The last frame returned by the camera (for comparison).
-    private Mat current, previous, thresholdDifferences;
+    private Mat previous, binaryDiff;
     private enum PictureState {FIRST_FLASH, FIRST_ANCHOR, TYPICAL_PROGRESSION}
     private PictureState currentPictureState = PictureState.FIRST_FLASH;
 
@@ -188,8 +190,8 @@ public class SmartAlarmActivity extends AppCompatActivity implements OnScreenLog
      */
     @Override
     public void onCameraViewStarted(int width, int height) {
-        current = new Mat(height, width, CvType.CV_8UC1);
         previous = new Mat(height, width, CvType.CV_8UC1);
+        binaryDiff = new Mat();
         currentPictureState = PictureState.FIRST_FLASH;
     }
 
@@ -198,9 +200,11 @@ public class SmartAlarmActivity extends AppCompatActivity implements OnScreenLog
      */
     @Override
     public void onCameraViewStopped() {
-        thresholdDifferences.release();
+        binaryDiff.release();
         previous.release();
     }
+
+    private long lastUpdateTime = -1;
 
     /**
      * Where all of the image processing goes.
@@ -210,6 +214,8 @@ public class SmartAlarmActivity extends AppCompatActivity implements OnScreenLog
     {
         try
         {
+            Imgproc.cvtColor(inputFrame, inputFrame, Imgproc.COLOR_RGB2GRAY);
+
             switch(currentPictureState)
             {
                 case FIRST_FLASH:
@@ -230,47 +236,24 @@ public class SmartAlarmActivity extends AppCompatActivity implements OnScreenLog
                     return inputFrame;
 
                 case TYPICAL_PROGRESSION:
-                    setFlashState(false);
 
-                    inputFrame.copyTo(current);
+                    if (lastUpdateTime != -1)
+                        onScreenLog.lines("Took " + (System.currentTimeMillis() - lastUpdateTime) + " to update");
+                    lastUpdateTime = System.currentTimeMillis();
+
+                    setFlashState(false);
 
                     onScreenLog.lines("Analyzing camera frame...");
 
                     // Figure out what's actually different (absdiff is just a bit too sensitive)
-                    double threshold = 100.0;
-                    thresholdDifferences = Mat.zeros(current.rows(), current.cols(), CvType.CV_8UC1);
-
-                    // The number of pixels above the threshold.
-                    int numSaturated = 0;
-
-                    // Manually go through the pixels and determine whether or not I'm moving.
-                    for (int rowIndex = 0; rowIndex < current.rows(); rowIndex++)
-                    {
-                        for (int colIndex = 0; colIndex < current.cols(); colIndex++)
-                        {
-                            double[] currentPixel = current.get(rowIndex, colIndex);
-                            double[] previousPixel = previous.get(rowIndex, colIndex);
-
-                            // Check using the Pythagorean theorem.
-                            double totalDifference = 0;
-                            for (int rgbIndex = 0; rgbIndex < 3; rgbIndex++)
-                                totalDifference += Math.pow((currentPixel[rgbIndex] - previousPixel[rgbIndex]), 2);
-                            totalDifference = Math.sqrt(totalDifference);
-
-                            // In order to visualize the noise in question.
-                            if (totalDifference > threshold)
-                            {
-                                thresholdDifferences.put(rowIndex, colIndex, 255, 255, 255);
-                                numSaturated++;
-                            }
-                        }
-                    }
+                    Core.absdiff(inputFrame, previous, binaryDiff);
+                    Imgproc.threshold(binaryDiff, binaryDiff, 100, 255, Imgproc.THRESH_BINARY);
 
                     // Remember the last image.
                     inputFrame.copyTo(previous);
 
                     // Determine whether the person is stirring (simple noise detection)
-                    if ((double)(numSaturated) / (current.rows() * current.cols()) > RESTLESSNESS_NOISE_SATURATION_THRESHOLD)
+                    if ((double)(Core.countNonZero(binaryDiff)) / (binaryDiff.height() * binaryDiff.width()) > RESTLESSNESS_NOISE_SATURATION_THRESHOLD)
                     {
                         onScreenLog.lines("Would now reset alarm based on sleep cycle");
 
@@ -287,7 +270,7 @@ public class SmartAlarmActivity extends AppCompatActivity implements OnScreenLog
                     Thread.sleep(500);
 
                     // This display is on a noticeable delay, but that's the price I gotta pay for this to be synchronous.
-                    return thresholdDifferences;
+                    return binaryDiff;
             }
 
             // Take a new picture!
