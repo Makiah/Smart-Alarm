@@ -2,6 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/AndroidCV-SDK/AndroidCV-SDK.iml" filepath="$PROJECT_DIR$/AndroidCV-SDK/AndroidCV-SDK.iml" />
       <module fileurl="file://$PROJECT_DIR$/Smart-Alarm.iml" filepath="$PROJECT_DIR$/Smart-Alarm.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
       <module fileurl="file://$PROJECT_DIR$/makiahsandroidlib/makiahsandroidlib.iml" filepath="$PROJECT_DIR$/makiahsandroidlib/makiahsandroidlib.iml" />

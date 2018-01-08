@@ -8,9 +8,9 @@
         <option name="modules">
           <set>
             <option value="$PROJECT_DIR$" />
+            <option value="$PROJECT_DIR$/AndroidCV-SDK" />
             <option value="$PROJECT_DIR$/app" />
             <option value="$PROJECT_DIR$/makiahsandroidlib" />
-            <option value="$PROJECT_DIR$/openCVLibrary330" />
           </set>
         </option>
         <option name="resolveModulePerSourceSet" value="false" />

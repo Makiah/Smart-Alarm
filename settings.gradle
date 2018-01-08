@@ -1,2 +1,2 @@
 include ':app', ':makiahsandroidlib'
-include ':openCVLibrary330'
+include ':AndroidCV-SDK'
