@@ -10,6 +10,6 @@ public class CameraFeedLog extends OnScreenLog
 {
     public CameraFeedLog(CameraFeedActivity activity)
     {
-        super(activity, (TextView) activity.findViewById(R.id.debugtextview));
+        super(activity, null); //(TextView) activity.findViewById(R.id.debugtextview));
     }
 }

@@ -36,12 +36,9 @@ public class CameraFeedActivity extends Activity implements OnScreenLogParent, C
         return taskActive;
     }
 
-    // Loads camera view of OpenCV for us to use. This lets us see using OpenCV
+    // Loads camera view of OpenCV for® us to use. This lets us see using OpenCV
     private CameraBridgeViewBase cameraBridgeViewBase;
     private JavaCameraViewWithFlash javaCameraView;
-
-    // This does a lot of the grunt work involved in the sleep processing.
-    private CameraFeedLog onScreenLog;
 
     /**
      * The callback for when OpenCV has finished initialization.
@@ -92,9 +89,6 @@ public class CameraFeedActivity extends Activity implements OnScreenLogParent, C
         // Create both a CameraBridgeViewBase and a JavaCameraView with flash so that I can modify the flash state while also being able to view the camera.
         javaCameraView = (JavaCameraViewWithFlash) findViewById(R.id.openCVCamFeed);
 
-        // Required components which control app stuff.
-        onScreenLog = new CameraFeedLog(this);
-
         // Set camera view base properties and direct frames to the restlessness detector.
         cameraBridgeViewBase = javaCameraView;
         cameraBridgeViewBase.enableFpsMeter();
@@ -134,9 +128,6 @@ public class CameraFeedActivity extends Activity implements OnScreenLogParent, C
         }
 
         taskActive = true;
-
-        // Restart the on screen log.
-        onScreenLog.run();
     }
 
     /**
@@ -218,7 +209,6 @@ public class CameraFeedActivity extends Activity implements OnScreenLogParent, C
                     Thread.sleep(1000);
 
                     // Return empty.
-                    onScreenLog.lines("First flash complete.");
                     currentPictureState = PictureState.FIRST_ANCHOR;
                     return inputFrame;
 
@@ -226,19 +216,16 @@ public class CameraFeedActivity extends Activity implements OnScreenLogParent, C
                     inputFrame.copyTo(previous);
 
                     // Return empty.
-                    onScreenLog.lines("First anchor complete.");
                     currentPictureState = PictureState.TYPICAL_PROGRESSION;
                     return inputFrame;
 
                 case TYPICAL_PROGRESSION:
 
-                    if (lastUpdateTime != -1)
-                        onScreenLog.lines("Took " + (System.currentTimeMillis() - lastUpdateTime) + " to update");
+//                    if (lastUpdateTime != -1)
+//                        onScreenLog.lines("Took " + (System.currentTimeMillis() - lastUpdateTime) + " to update");
                     lastUpdateTime = System.currentTimeMillis();
 
                     setFlashState(false);
-
-                    onScreenLog.lines("Analyzing camera frame...");
 
                     // Figure out what's actually different (absdiff is just a bit too sensitive)
                     Core.absdiff(inputFrame, previous, binaryDiff);
@@ -250,8 +237,6 @@ public class CameraFeedActivity extends Activity implements OnScreenLogParent, C
                     // Determine whether the person is stirring (simple noise detection)
                     if ((double)(Core.countNonZero(binaryDiff)) / (binaryDiff.height() * binaryDiff.width()) > RESTLESSNESS_NOISE_SATURATION_THRESHOLD)
                     {
-                        onScreenLog.lines("Would now reset alarm based on sleep cycle");
-
                         // TODO Find scheduling time
                         Thread.sleep(3000);
                     } else
@@ -271,9 +256,7 @@ public class CameraFeedActivity extends Activity implements OnScreenLogParent, C
             // Take a new picture!
 
         } catch (InterruptedException e)
-        {
-            onScreenLog.lines("Interrupted!");
-        }
+        {}
 
         return null; // Won't get called unless there's an exception.
     }

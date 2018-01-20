@@ -13,8 +13,8 @@
         <!-- Landing page (the entry point, may direct immediately to intro questions if unanswered). -->
         <activity
             android:name=".landingpage.LandingPageActivity"
-            android:screenOrientation="landscape"
-            android:label="Sleep Analysis">
+            android:screenOrientation="portrait"
+            android:label="Smart Alarm">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

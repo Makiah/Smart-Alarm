@@ -23,22 +23,13 @@ public class LandingPageActivity extends Activity
         setContentView(R.layout.activity_landing_page);
 
         // Decide whether we need to navigate to the Intro Questions activity.
-        SharedPreferences sharedPref = getPreferences(Context.MODE_PRIVATE);
-        if (sharedPref.getBoolean(getString(R.string.intro_complete), false))
+        SharedPreferences sharedPref = getSharedPreferences("appsettings", Context.MODE_PRIVATE);
+        if (!(sharedPref.contains(getString(R.string.intro_complete)) && sharedPref.getBoolean(getString(R.string.intro_complete), false)))
         {
             Intent intent = new Intent(this, IntroQuestionsActivity.class);
             startActivity(intent);
+            finish();
         }
-    }
-
-    /**
-     * Starts the camera feed and the resulting analysis.
-     * @param currentView
-     */
-    public void startAlarmSetter(View currentView)
-    {
-        Intent intent = new Intent(this, CameraFeedActivity.class);
-        startActivity(intent);
     }
 
     public void onTimeChosen()
