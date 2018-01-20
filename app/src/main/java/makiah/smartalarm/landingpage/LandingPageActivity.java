@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.TimePicker;
 
 import makiah.smartalarm.R;
 import makiah.smartalarm.camerafeed.CameraFeedActivity;
@@ -32,7 +33,17 @@ public class LandingPageActivity extends Activity
         }
     }
 
-    public void onTimeChosen()
+    public void onTimeChosen(View view)
     {
+        TimePicker timePicker = (TimePicker)findViewById(R.id.timePicker);
+
+        Bundle toShare = new Bundle();
+        toShare.putInt("HOUR", timePicker.getHour());
+        toShare.putInt("MINUTE", timePicker.getMinute());
+        toShare.putInt("AM", timePicker.getBaseline());
+
+        Intent intent = new Intent(this, CameraFeedActivity.class);
+        startActivity(intent, toShare);
+        finish();
     }
 }

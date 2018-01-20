@@ -61,16 +61,6 @@ public class CameraFeedActivity extends Activity implements OnScreenLogParent, C
     };
 
     /**
-     * Used by the UI for when the user wants to set their alarm for some given time.
-     * @param currentView some weird parameter requested by the Button object.
-     */
-    public void postSleepFeedbackTime(View currentView)
-    {
-        Intent intent = new Intent(this, PostSleepFeedbackActivity.class);
-        startActivity(intent);
-    }
-
-    /**
      * Called upon the creation of the activity.
      *
      * @param savedInstanceState the state that the last launch was in.
@@ -80,6 +70,9 @@ public class CameraFeedActivity extends Activity implements OnScreenLogParent, C
     {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_camera_feed);
+
+        Bundle bundle = getIntent().getExtras();
+        int chosenHour = savedInstanceState.getInt("HOUR"), chosenMinute = bundle.getInt("MINUTE"), chosenAM = bundle.getInt("AM");
 
         taskActive = true;
 
@@ -259,5 +252,15 @@ public class CameraFeedActivity extends Activity implements OnScreenLogParent, C
         {}
 
         return null; // Won't get called unless there's an exception.
+    }
+
+    /**
+     * Used by the UI for when the user wants to set their alarm for some given time.
+     * @param currentView some weird parameter requested by the Button object.
+     */
+    public void postSleepFeedbackTime(View currentView)
+    {
+        Intent intent = new Intent(this, PostSleepFeedbackActivity.class);
+        startActivity(intent);
     }
 }
