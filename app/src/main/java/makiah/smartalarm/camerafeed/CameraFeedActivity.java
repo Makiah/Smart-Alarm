@@ -1,8 +1,8 @@
-package makiah.smartalarm;
+package makiah.smartalarm.camerafeed;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.SurfaceView;
 import android.view.View;
@@ -19,15 +19,12 @@ import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.imgproc.Imgproc;
 
-import makiah.smartalarm.alarmsetter.AlarmSetterActivity;
-import makiah.smartalarm.opencvutilities.JavaCameraViewWithFlash;
+import makiah.smartalarm.R;
+import makiah.smartalarm.postsleepfeedback.PostSleepFeedbackActivity;
 
-public class SmartAlarmActivity extends AppCompatActivity implements OnScreenLogParent, CameraBridgeViewBase.CvCameraViewListener
+public class CameraFeedActivity extends Activity implements OnScreenLogParent, CameraBridgeViewBase.CvCameraViewListener
 {
-    private static final String TAG = "SmartAlarmActivity";
-
-    // The minimum camera pixel dimensions that will be requested by this app.
-    private static final int FRAME_WIDTH_REQUEST = 176, FRAME_HEIGHT_REQUEST = 144;
+    private static final String TAG = "CameraFeedActivity";
 
     // The area of the camera which has to be obscured with noise to reset a sleep cycle.
     private static final double RESTLESSNESS_NOISE_SATURATION_THRESHOLD = .3;
@@ -44,7 +41,7 @@ public class SmartAlarmActivity extends AppCompatActivity implements OnScreenLog
     private JavaCameraViewWithFlash javaCameraView;
 
     // This does a lot of the grunt work involved in the sleep processing.
-    private SmartAlarmLog onScreenLog;
+    private CameraFeedLog onScreenLog;
 
     /**
      * The callback for when OpenCV has finished initialization.
@@ -68,11 +65,11 @@ public class SmartAlarmActivity extends AppCompatActivity implements OnScreenLog
 
     /**
      * Used by the UI for when the user wants to set their alarm for some given time.
-     * @param currentView
+     * @param currentView some weird parameter requested by the Button object.
      */
-    public void startAlarmSetter(View currentView)
+    public void postSleepFeedbackTime(View currentView)
     {
-        Intent intent = new Intent(this, AlarmSetterActivity.class);
+        Intent intent = new Intent(this, PostSleepFeedbackActivity.class);
         startActivity(intent);
     }
 
@@ -85,7 +82,7 @@ public class SmartAlarmActivity extends AppCompatActivity implements OnScreenLog
     protected void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_smart_alarm);
+        setContentView(R.layout.activity_camera_feed);
 
         taskActive = true;
 
@@ -96,14 +93,12 @@ public class SmartAlarmActivity extends AppCompatActivity implements OnScreenLog
         javaCameraView = (JavaCameraViewWithFlash) findViewById(R.id.show_camera_activity_java_surface_view);
 
         // Required components which control app stuff.
-        onScreenLog = new SmartAlarmLog(this);
+        onScreenLog = new CameraFeedLog(this);
 
         // Set camera view base properties and direct frames to the restlessness detector.
         cameraBridgeViewBase = javaCameraView;
         cameraBridgeViewBase.enableFpsMeter();
         cameraBridgeViewBase.setVisibility(SurfaceView.VISIBLE);
-        cameraBridgeViewBase.setMinimumHeight(FRAME_HEIGHT_REQUEST);
-        cameraBridgeViewBase.setMinimumWidth(FRAME_WIDTH_REQUEST);
 
         cameraBridgeViewBase.setCvCameraViewListener(this);
     }

@@ -35,7 +35,7 @@
         android:layout_height="fill_parent"
         android:layout_weight="5">
 
-        <makiah.smartalarm.opencvutilities.JavaCameraViewWithFlash
+        <makiah.smartalarm.camerafeed.JavaCameraViewWithFlash
             android:layout_height="fill_parent"
             android:layout_width="fill_parent"
             android:id="@+id/show_camera_activity_java_surface_view"/>

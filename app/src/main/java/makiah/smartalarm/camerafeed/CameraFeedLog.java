@@ -1,12 +1,14 @@
-package makiah.smartalarm;
+package makiah.smartalarm.camerafeed;
 
 import android.widget.TextView;
 
 import com.makiah.makiahsandroidlib.logging.OnScreenLog;
 
-public class SmartAlarmLog extends OnScreenLog
+import makiah.smartalarm.R;
+
+public class CameraFeedLog extends OnScreenLog
 {
-    public SmartAlarmLog(SmartAlarmActivity activity)
+    public CameraFeedLog(CameraFeedActivity activity)
     {
         super(activity, (TextView) activity.findViewById(R.id.debugtextview));
     }

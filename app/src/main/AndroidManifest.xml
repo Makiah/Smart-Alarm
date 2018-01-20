@@ -4,30 +4,51 @@
 
     <application
         android:allowBackup="true"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@mipmap/sleepicon"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme" >
+
+        <!-- Landing page (the entry point, may direct immediately to intro questions if unanswered). -->
         <activity
-            android:name=".SmartAlarmActivity"
-            android:screenOrientation="landscape" >
+            android:name=".landingpage.LandingPageActivity"
+            android:screenOrientation="landscape"
+            android:label="Sleep Analysis">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
+        <!-- The Intro Questions, where the user is first directed to UNLESS they've already answered them -->
         <activity
-            android:name=".alarmsetter.AlarmSetterActivity"
-            android:label="Alarm Setter"
-            android:parentActivityName=".SmartAlarmActivity"
-            android:screenOrientation="landscape" >
-            <!-- Parent activity meta-data to support 4.0 and lower -->
-            <meta-data
-                android:name="android.support.PARENT_ACTIVITY"
-                android:value=".SmartAlarmActivity" />
+            android:name=".introquestions.IntroQuestionsActivity"
+            android:screenOrientation="portrait"
+            android:label="Intro Questions">
+            <!--android:parentActivityName=".landingpage.LandingPageActivity">-->
+            <!--<meta-data-->
+                <!--android:name="android.support.PARENT_ACTIVITY"-->
+                <!--android:value=".landingpage.LandingPageActivity" />-->
+        </activity>
+
+        <!-- The Camera Feed activity, follows Landing Page -->
+        <activity
+            android:name=".camerafeed.CameraFeedActivity"
+            android:screenOrientation="landscape"
+            android:label="Sleep Analysis">
+            <!--android:parentActivityName=".landingpage.LandingPageActivity">-->
+            <!--&lt;!&ndash; Parent activity meta-data to support 4.0 and lower &ndash;&gt;-->
+            <!--<meta-data-->
+                <!--android:name="android.support.PARENT_ACTIVITY"-->
+                <!--android:value=".landingpage.LandingPageActivity" />-->
+        </activity>
+
+        <!-- Post-Sleep analysis (follows camera analysis) -->
+        <activity
+            android:name=".postsleepfeedback.PostSleepFeedbackActivity"
+            android:screenOrientation="portrait"
+            android:label="Feedback">
         </activity>
 
     </application>
