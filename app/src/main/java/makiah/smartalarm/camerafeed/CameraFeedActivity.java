@@ -90,7 +90,7 @@ public class CameraFeedActivity extends Activity implements OnScreenLogParent, C
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         // Create both a CameraBridgeViewBase and a JavaCameraView with flash so that I can modify the flash state while also being able to view the camera.
-        javaCameraView = (JavaCameraViewWithFlash) findViewById(R.id.show_camera_activity_java_surface_view);
+        javaCameraView = (JavaCameraViewWithFlash) findViewById(R.id.openCVCamFeed);
 
         // Required components which control app stuff.
         onScreenLog = new CameraFeedLog(this);
@@ -127,7 +127,7 @@ public class CameraFeedActivity extends Activity implements OnScreenLogParent, C
 
         if (!OpenCVLoader.initDebug()) {
             Log.d(TAG, "Internal OpenCV library not found. Using OpenCV Manager for initialization");
-            OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_3_0, this, mLoaderCallback);
+            OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_4_0, this, mLoaderCallback);
         } else {
             Log.d(TAG, "OpenCV library found inside package. Using it!");
             mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);

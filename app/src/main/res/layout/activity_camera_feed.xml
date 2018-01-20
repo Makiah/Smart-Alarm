@@ -1,52 +1,47 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:opencv="http://schemas.android.com/apk/res-auto"
     android:orientation="horizontal">
 
+    <makiah.smartalarm.camerafeed.JavaCameraViewWithFlash
+        android:layout_height="match_parent"
+        android:layout_width="match_parent"
+        android:id="@+id/openCVCamFeed"/>
+
     <LinearLayout
-        android:layout_width="0dp"
-        android:layout_height="fill_parent"
-        android:orientation="vertical"
-        android:layout_weight="2">
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="2"
+            android:orientation="horizontal">
+            <TextView
+                android:layout_width="0dp"
+                android:layout_weight="2"
+                android:layout_height="match_parent"
+                android:text="Other data"/>
+            <TextView
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="match_parent"
+                android:text="Waking up in..."/>
+        </LinearLayout>
 
         <TextView
-            android:id="@+id/debugtextview"
-            android:layout_width="fill_parent"
+            android:layout_width="match_parent"
+            android:layout_weight="1"
             android:layout_height="0dp"
-            android:layout_weight="12"
-            android:textSize="9sp"
-            android:text="This is the debug panel" />
-
-        <Button
-            android:id="@+id/button"
-            android:onClick="toggleCameraFlash"
-            android:text="Toggle Flash"
-            android:visibility="visible"
-            android:layout_height="0dp"
-            android:layout_width="fill_parent"
-            android:layout_weight="3"/>
-
+            android:text="Graph"/>
     </LinearLayout>
 
-    <RelativeLayout
-        android:layout_width="0dp"
-        android:layout_height="fill_parent"
-        android:layout_weight="5">
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone"
+        android:text="Time to wake up!"/>
 
-        <makiah.smartalarm.camerafeed.JavaCameraViewWithFlash
-            android:layout_height="fill_parent"
-            android:layout_width="fill_parent"
-            android:id="@+id/show_camera_activity_java_surface_view"/>
-
-        <Button
-            android:layout_width="150dp"
-            android:layout_height="75dp"
-            android:layout_alignParentBottom="true"
-            android:layout_alignParentRight="true"
-            android:text="Set Alarm"
-            android:onClick="startAlarmSetter"/>
-
-    </RelativeLayout>
-</LinearLayout>
+</FrameLayout>

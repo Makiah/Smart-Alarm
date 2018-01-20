@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Smart Alarm</string>
+    <string name="intro_complete">introcomplete</string>
 </resources>
