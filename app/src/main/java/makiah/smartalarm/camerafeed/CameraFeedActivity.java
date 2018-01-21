@@ -63,9 +63,6 @@ public class CameraFeedActivity extends Activity implements OnScreenLogParent, C
     // When we have to wake the user up.
     private long alarmTimeSeconds = 0;
 
-    // Set by other thread.
-    private boolean timeToWakeUp = false;
-
     /**
      * The callback for when OpenCV has finished initialization.
      */
@@ -339,10 +336,17 @@ public class CameraFeedActivity extends Activity implements OnScreenLogParent, C
     public void timeToWakeUp()
     {
         ((Button)findViewById(R.id.wakeUpTime)).setVisibility(View.VISIBLE);
-        timeToWakeUp = true;
 
         // Stop the camera view.
         cameraBridgeViewBase.disableView();
+    }
+
+    /**
+     * When the user accepts the "Time To Wake Up" prompt.
+     */
+    public void acceptedTimeToWakeUp(View view)
+    {
+        ((Button)findViewById(R.id.wakeUpTime)).setVisibility(View.GONE);
     }
 
     /**
