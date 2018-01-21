@@ -40,7 +40,6 @@ public class LandingPageActivity extends Activity
         Intent intent = new Intent(this, CameraFeedActivity.class);
         intent.putExtra("HOUR", timePicker.getHour());
         intent.putExtra("MINUTE", timePicker.getMinute());
-        intent.putExtra("AM", timePicker.getBaseline());
 
         startActivity(intent);
         finish();

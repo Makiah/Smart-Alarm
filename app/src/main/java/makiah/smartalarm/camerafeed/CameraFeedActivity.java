@@ -9,11 +9,13 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.Toast;
 
 import com.jjoe64.graphview.GraphView;
 import com.jjoe64.graphview.series.DataPoint;
 import com.jjoe64.graphview.series.LineGraphSeries;
 import com.makiah.makiahsandroidlib.logging.OnScreenLogParent;
+import com.makiah.makiahsandroidlib.threading.ParallelTask;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
@@ -26,6 +28,9 @@ import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
+import java.util.Calendar;
+import java.util.Date;
+
 import makiah.smartalarm.R;
 import makiah.smartalarm.postsleepfeedback.PostSleepFeedbackActivity;
 
@@ -33,21 +38,33 @@ public class CameraFeedActivity extends Activity implements OnScreenLogParent, C
 {
     private static final String TAG = "CameraFeedActivity";
 
+    // How long a human sleep cycle lasts.
+    private static final long SLEEP_CYCLE_SECONDS = 90 * 60; // 90 minutes for sleep cycle on average, will be tuned based on my own measurements.
+
     // Stuff for the subtasks.
-    private boolean taskActive = true;
     public boolean isTaskActive()
     {
-        return taskActive;
+        return true;
     }
 
     // region Methods required by Activity
     // Loads camera view of OpenCV for us to use. This lets us see using OpenCV
     private CameraBridgeViewBase cameraBridgeViewBase;
     private JavaCameraViewWithFlash javaCameraView;
+
+    // For visualization of sleep disturbance.
     private GraphView sleepGraph;
     private LineGraphSeries<DataPoint> sleepGraphPoints;
+
+    // To observe either the camera OR the disturbance graph.
     private Button viewToggleButton;
-    private boolean observingGraph = true;
+    private boolean observingGraph = true; // whether we're observing the graph vs the camera.
+
+    // When we have to wake the user up.
+    private long alarmTimeSeconds = 0;
+
+    // Set by other thread.
+    private boolean timeToWakeUp = false;
 
     /**
      * The callback for when OpenCV has finished initialization.
@@ -70,6 +87,27 @@ public class CameraFeedActivity extends Activity implements OnScreenLogParent, C
     };
 
     /**
+     * This task stops the camera thread and tells us when it's time for the user to wake up.
+     */
+    private ParallelTask alarmTask = new ParallelTask(this, "Wake Up Thread")
+    {
+        @Override
+        protected void onDoTask() throws InterruptedException
+        {
+            long startTime = System.currentTimeMillis();
+            while (alarmTimeSeconds - (System.currentTimeMillis() - startTime) / 1000.0 > 0)
+                Thread.yield();
+
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    timeToWakeUp();
+                }
+            });
+        }
+    };
+
+    /**
      * Called upon the creation of the activity.
      *
      * @param savedInstanceState the state that the last launch was in.
@@ -81,10 +119,25 @@ public class CameraFeedActivity extends Activity implements OnScreenLogParent, C
         setContentView(R.layout.activity_camera_feed);
 
         // Get the data sent from the landing page, and determine how long this person will be sleeping.
-//        Bundle bundle = getIntent().getExtras();
-//        int chosenHour = bundle.getInt("HOUR"), chosenMinute = bundle.getInt("MINUTE"), chosenAM = bundle.getInt("AM");
+        Bundle bundle = getIntent().getExtras();
+        int chosenHour = bundle.getInt("HOUR"), chosenMinute = bundle.getInt("MINUTE");
 
-        taskActive = true;
+        // Determine the current time.
+        Date currentTime = Calendar.getInstance().getTime();
+        Date chosenDate = new Date(currentTime.getYear(), currentTime.getMonth(), currentTime.getDate(), chosenHour, chosenMinute);
+
+        // Decide whether this alarm will be for tomorrow.
+        if (currentTime.after(chosenDate))
+            chosenDate = new Date(currentTime.getYear(), currentTime.getMonth(), currentTime.getDate() + 1, chosenHour, chosenMinute);
+
+        // Now decide how long this will take.
+        alarmTimeSeconds = (long)((chosenDate.getTime() - currentTime.getTime()) / 1000.0);
+
+        // Run the wake up thread.
+        alarmTask.run();
+
+        // Show chosen time (for 2:10 pm, it's 14/10)
+        Toast.makeText(getBaseContext(), "" + chosenHour + "/" + chosenMinute + "/" + currentTime.getHours() + "/" + currentTime.getMinutes() + "/" + alarmTimeSeconds, Toast.LENGTH_LONG).show();
 
         Log.i(TAG, "called onCreate");
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -103,7 +156,7 @@ public class CameraFeedActivity extends Activity implements OnScreenLogParent, C
         sleepGraph = (GraphView)findViewById(R.id.sleepGraph);
         sleepGraph.getViewport().setXAxisBoundsManual(true);
         sleepGraph.getViewport().setMinX(0);
-        sleepGraph.getViewport().setMaxX(40);
+        sleepGraph.getViewport().setMaxX(alarmTimeSeconds);
         sleepGraph.getViewport().setYAxisBoundsManual(true);
         sleepGraph.getViewport().setMinY(0);
         sleepGraph.getViewport().setMaxY(1);
@@ -124,8 +177,6 @@ public class CameraFeedActivity extends Activity implements OnScreenLogParent, C
 
         if (cameraBridgeViewBase != null)
             cameraBridgeViewBase.disableView();
-
-        taskActive = false;
     }
 
     /**
@@ -143,8 +194,6 @@ public class CameraFeedActivity extends Activity implements OnScreenLogParent, C
             Log.d(TAG, "OpenCV library found inside package. Using it!");
             mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
         }
-
-        taskActive = true;
     }
 
     /**
@@ -156,8 +205,6 @@ public class CameraFeedActivity extends Activity implements OnScreenLogParent, C
 
         if (cameraBridgeViewBase != null)
             cameraBridgeViewBase.disableView();
-
-        taskActive = false;
     }
 
     //endregion
@@ -247,14 +294,14 @@ public class CameraFeedActivity extends Activity implements OnScreenLogParent, C
             double saturation = Core.countNonZero(diffMat) / diffMat.size().area();
 
             // Append this data to the on-screen graph
-            sleepGraphPoints.appendData(new DataPoint((System.currentTimeMillis() - analysisStartTime) / 1000.0, saturation), true, 40);
+            sleepGraphPoints.appendData(new DataPoint((System.currentTimeMillis() - analysisStartTime) / 1000.0, saturation), false, 5000);
 
             // Show on the input frame where differences were detected.
             inputFrame.setTo(new Scalar(255), diffMat);
             diffMat.release();
 
             // Wait for a bit
-            pauseWhileYielding(15000);
+            pauseWhileYielding((long)(15000 * (1 - saturation) + 400));
 
             // Turn flash on and start new one.
             javaCameraView.setFlashState(true);
@@ -264,16 +311,6 @@ public class CameraFeedActivity extends Activity implements OnScreenLogParent, C
         {}
 
         return inputFrame;
-    }
-
-    /**
-     * Used by the UI for when the user wants to set their alarm for some given time.
-     * @param currentView some weird parameter requested by the Button object.
-     */
-    public void postSleepFeedbackTime(View currentView)
-    {
-        Intent intent = new Intent(this, PostSleepFeedbackActivity.class);
-        startActivity(intent);
     }
 
     /**
@@ -294,5 +331,27 @@ public class CameraFeedActivity extends Activity implements OnScreenLogParent, C
             ((ViewGroup) findViewById(R.id.sleepGraphContainer)).setVisibility(View.GONE);
             viewToggleButton.setText("Observe Graph");
         }
+    }
+
+    /**
+     * Pretty self-explanatory, called by thread.
+     */
+    public void timeToWakeUp()
+    {
+        ((Button)findViewById(R.id.wakeUpTime)).setVisibility(View.VISIBLE);
+        timeToWakeUp = true;
+
+        // Stop the camera view.
+        cameraBridgeViewBase.disableView();
+    }
+
+    /**
+     * Used by the UI for when the user wants to set their alarm for some given time.
+     * @param currentView some weird parameter requested by the Button object.
+     */
+    public void postSleepFeedbackTime(View currentView)
+    {
+        Intent intent = new Intent(this, PostSleepFeedbackActivity.class);
+        startActivity(intent);
     }
 }
