@@ -37,13 +37,12 @@ public class LandingPageActivity extends Activity
     {
         TimePicker timePicker = (TimePicker)findViewById(R.id.timePicker);
 
-        Bundle toShare = new Bundle();
-        toShare.putInt("HOUR", timePicker.getHour());
-        toShare.putInt("MINUTE", timePicker.getMinute());
-        toShare.putInt("AM", timePicker.getBaseline());
-
         Intent intent = new Intent(this, CameraFeedActivity.class);
-        startActivity(intent, toShare);
+        intent.putExtra("HOUR", timePicker.getHour());
+        intent.putExtra("MINUTE", timePicker.getMinute());
+        intent.putExtra("AM", timePicker.getBaseline());
+
+        startActivity(intent);
         finish();
     }
 }

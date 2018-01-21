@@ -6,8 +6,13 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.SurfaceView;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.widget.Button;
 
+import com.jjoe64.graphview.GraphView;
+import com.jjoe64.graphview.series.DataPoint;
+import com.jjoe64.graphview.series.LineGraphSeries;
 import com.makiah.makiahsandroidlib.logging.OnScreenLogParent;
 
 import org.opencv.android.BaseLoaderCallback;
@@ -17,6 +22,8 @@ import org.opencv.android.OpenCVLoader;
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
+import org.opencv.core.Scalar;
+import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
 import makiah.smartalarm.R;
@@ -26,9 +33,6 @@ public class CameraFeedActivity extends Activity implements OnScreenLogParent, C
 {
     private static final String TAG = "CameraFeedActivity";
 
-    // The area of the camera which has to be obscured with noise to reset a sleep cycle.
-    private static final double RESTLESSNESS_NOISE_SATURATION_THRESHOLD = .3;
-
     // Stuff for the subtasks.
     private boolean taskActive = true;
     public boolean isTaskActive()
@@ -36,9 +40,14 @@ public class CameraFeedActivity extends Activity implements OnScreenLogParent, C
         return taskActive;
     }
 
-    // Loads camera view of OpenCV for® us to use. This lets us see using OpenCV
+    // region Methods required by Activity
+    // Loads camera view of OpenCV for us to use. This lets us see using OpenCV
     private CameraBridgeViewBase cameraBridgeViewBase;
     private JavaCameraViewWithFlash javaCameraView;
+    private GraphView sleepGraph;
+    private LineGraphSeries<DataPoint> sleepGraphPoints;
+    private Button viewToggleButton;
+    private boolean observingGraph = true;
 
     /**
      * The callback for when OpenCV has finished initialization.
@@ -71,8 +80,9 @@ public class CameraFeedActivity extends Activity implements OnScreenLogParent, C
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_camera_feed);
 
-        Bundle bundle = getIntent().getExtras();
-        int chosenHour = savedInstanceState.getInt("HOUR"), chosenMinute = bundle.getInt("MINUTE"), chosenAM = bundle.getInt("AM");
+        // Get the data sent from the landing page, and determine how long this person will be sleeping.
+//        Bundle bundle = getIntent().getExtras();
+//        int chosenHour = bundle.getInt("HOUR"), chosenMinute = bundle.getInt("MINUTE"), chosenAM = bundle.getInt("AM");
 
         taskActive = true;
 
@@ -86,8 +96,22 @@ public class CameraFeedActivity extends Activity implements OnScreenLogParent, C
         cameraBridgeViewBase = javaCameraView;
         cameraBridgeViewBase.enableFpsMeter();
         cameraBridgeViewBase.setVisibility(SurfaceView.VISIBLE);
-
         cameraBridgeViewBase.setCvCameraViewListener(this);
+//        cameraBridgeViewBase.setMaxFrameSize(2000, 2000);
+
+        // Initialize the graph view
+        sleepGraph = (GraphView)findViewById(R.id.sleepGraph);
+        sleepGraph.getViewport().setXAxisBoundsManual(true);
+        sleepGraph.getViewport().setMinX(0);
+        sleepGraph.getViewport().setMaxX(40);
+        sleepGraph.getViewport().setYAxisBoundsManual(true);
+        sleepGraph.getViewport().setMinY(0);
+        sleepGraph.getViewport().setMaxY(1);
+        sleepGraphPoints = new LineGraphSeries<>();
+        sleepGraph.addSeries(sleepGraphPoints);
+
+        // Get other UI elements
+        viewToggleButton = (Button)findViewById(R.id.toggleCameraButton);
     }
 
     /**
@@ -135,31 +159,13 @@ public class CameraFeedActivity extends Activity implements OnScreenLogParent, C
 
         taskActive = false;
     }
-    /// Custom methods I added for this app ///
 
-    public void setFlashState(boolean state) {javaCameraView.setFlashState(state);}
+    //endregion
 
-    /**
-     * A button on the UI triggers this function.
-     */
-    public void toggleCameraFlash()
-    {
-        javaCameraView.toggleFlashState();
-    }
-    /**
-     * Called from UI instead (so View param included).
-     *
-     * @param currentView A required parameter for the UI element method.
-     */
-    public void toggleCameraFlash(View currentView)
-    {
-        toggleCameraFlash();
-    }
+    private enum PictureState {FIRST_PICTURE, FIRST_FLASH_PICTURE, NORMAL_PROGRESSION}
+    private PictureState pictureState = PictureState.FIRST_PICTURE;
 
-    // The last frame returned by the camera (for comparison).
-    private Mat previous, binaryDiff;
-    private enum PictureState {FIRST_FLASH, FIRST_ANCHOR, TYPICAL_PROGRESSION}
-    private PictureState currentPictureState = PictureState.FIRST_FLASH;
+    private Mat previous;
 
     /**
      * Initialize all mats here...
@@ -168,22 +174,31 @@ public class CameraFeedActivity extends Activity implements OnScreenLogParent, C
      * @param height - the height of the frames that will be delivered
      */
     @Override
-    public void onCameraViewStarted(int width, int height) {
-        previous = new Mat(height, width, CvType.CV_8UC1);
-        binaryDiff = new Mat();
-        currentPictureState = PictureState.FIRST_FLASH;
+    public void onCameraViewStarted(int width, int height)
+    {
+        previous = Mat.zeros(new Size(width, height), CvType.CV_8UC1);
     }
 
     /**
      * And deinit them here.
      */
     @Override
-    public void onCameraViewStopped() {
-        binaryDiff.release();
+    public void onCameraViewStopped()
+    {
         previous.release();
     }
 
-    private long lastUpdateTime = -1;
+    private long analysisStartTime = 0;
+
+    /**
+     * Yields flow to other threads for a length of time.
+     */
+    private void pauseWhileYielding(long timeToPause)
+    {
+        long start = System.currentTimeMillis();
+        while (System.currentTimeMillis() - start < timeToPause)
+            Thread.yield();
+    }
 
     /**
      * Where all of the image processing goes.
@@ -193,65 +208,62 @@ public class CameraFeedActivity extends Activity implements OnScreenLogParent, C
     {
         try
         {
-            Imgproc.cvtColor(inputFrame, inputFrame, Imgproc.COLOR_RGB2GRAY);
+            // 4-channel to 3-channel (idk why we need alpha).
+            Imgproc.cvtColor(inputFrame, inputFrame, Imgproc.COLOR_RGBA2GRAY);
 
-            switch(currentPictureState)
+            // region Setting up regular progression
+            if (pictureState != PictureState.NORMAL_PROGRESSION)
             {
-                case FIRST_FLASH:
-                    setFlashState(true);
-                    Thread.sleep(1000);
-
-                    // Return empty.
-                    currentPictureState = PictureState.FIRST_ANCHOR;
+                if (pictureState == PictureState.FIRST_PICTURE)
+                {
+                    javaCameraView.setFlashState(true);
+                    pauseWhileYielding(500);
+                    pictureState = PictureState.FIRST_FLASH_PICTURE;
                     return inputFrame;
-
-                case FIRST_ANCHOR:
+                }
+                else if (pictureState == PictureState.FIRST_FLASH_PICTURE)
+                {
                     inputFrame.copyTo(previous);
-
-                    // Return empty.
-                    currentPictureState = PictureState.TYPICAL_PROGRESSION;
+                    javaCameraView.setFlashState(false);
+                    pauseWhileYielding(5000);
+                    javaCameraView.setFlashState(true);
+                    pictureState = PictureState.NORMAL_PROGRESSION;
+                    analysisStartTime = System.currentTimeMillis();
                     return inputFrame;
-
-                case TYPICAL_PROGRESSION:
-
-//                    if (lastUpdateTime != -1)
-//                        onScreenLog.lines("Took " + (System.currentTimeMillis() - lastUpdateTime) + " to update");
-                    lastUpdateTime = System.currentTimeMillis();
-
-                    setFlashState(false);
-
-                    // Figure out what's actually different (absdiff is just a bit too sensitive)
-                    Core.absdiff(inputFrame, previous, binaryDiff);
-                    Imgproc.threshold(binaryDiff, binaryDiff, 100, 255, Imgproc.THRESH_BINARY);
-
-                    // Remember the last image.
-                    inputFrame.copyTo(previous);
-
-                    // Determine whether the person is stirring (simple noise detection)
-                    if ((double)(Core.countNonZero(binaryDiff)) / (binaryDiff.height() * binaryDiff.width()) > RESTLESSNESS_NOISE_SATURATION_THRESHOLD)
-                    {
-                        // TODO Find scheduling time
-                        Thread.sleep(3000);
-                    } else
-                    {
-                        // Wait a while longer (person's probably asleep).
-                        Thread.sleep(15000);
-                    }
-
-                    // Start the flash again.
-                    setFlashState(true);
-                    Thread.sleep(500);
-
-                    // This display is on a noticeable delay, but that's the price I gotta pay for this to be synchronous.
-                    return binaryDiff;
+                }
             }
+            //endregion
 
-            // Take a new picture!
+            // Turn off flash during analysis.
+            javaCameraView.setFlashState(false);
 
-        } catch (InterruptedException e)
+            // Determine how much this frame differs from the last.
+            Mat diffMat = new Mat();
+            Core.absdiff(inputFrame, previous, diffMat);
+            inputFrame.copyTo(previous);
+            Imgproc.threshold(diffMat, diffMat, 30, 255, Imgproc.THRESH_BINARY);
+
+            // The extent to which this frame differs from the last.
+            double saturation = Core.countNonZero(diffMat) / diffMat.size().area();
+
+            // Append this data to the on-screen graph
+            sleepGraphPoints.appendData(new DataPoint((System.currentTimeMillis() - analysisStartTime) / 1000.0, saturation), true, 40);
+
+            // Show on the input frame where differences were detected.
+            inputFrame.setTo(new Scalar(255), diffMat);
+            diffMat.release();
+
+            // Wait for a bit
+            pauseWhileYielding(15000);
+
+            // Turn flash on and start new one.
+            javaCameraView.setFlashState(true);
+            pauseWhileYielding(500);
+        }
+        catch (Exception e)
         {}
 
-        return null; // Won't get called unless there's an exception.
+        return inputFrame;
     }
 
     /**
@@ -262,5 +274,25 @@ public class CameraFeedActivity extends Activity implements OnScreenLogParent, C
     {
         Intent intent = new Intent(this, PostSleepFeedbackActivity.class);
         startActivity(intent);
+    }
+
+    /**
+     * Switches between camera and graph view.
+     * @param view
+     */
+    public void toggleCurrentView(View view)
+    {
+        observingGraph = !observingGraph;
+
+        if (observingGraph)
+        {
+            ((ViewGroup) findViewById(R.id.sleepGraphContainer)).setVisibility(View.VISIBLE);
+            viewToggleButton.setText("Debug Camera View");
+        }
+        else
+        {
+            ((ViewGroup) findViewById(R.id.sleepGraphContainer)).setVisibility(View.GONE);
+            viewToggleButton.setText("Observe Graph");
+        }
     }
 }

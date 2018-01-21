@@ -5,39 +5,37 @@
     xmlns:opencv="http://schemas.android.com/apk/res-auto"
     android:orientation="horizontal">
 
+    <!-- The Camera Feed -->
     <makiah.smartalarm.camerafeed.JavaCameraViewWithFlash
         android:layout_height="match_parent"
         android:layout_width="match_parent"
-        android:id="@+id/openCVCamFeed"/>
+        android:id="@+id/openCVCamFeed"
+        android:visibility="visible"/>
 
+    <!-- The sleep graph (can be hidden) -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical">
-        <LinearLayout
+        android:background="@android:color/white"
+        android:visibility="visible"
+        android:id="@+id/sleepGraphContainer">
+        <com.jjoe64.graphview.GraphView
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="2"
-            android:orientation="horizontal">
-            <TextView
-                android:layout_width="0dp"
-                android:layout_weight="2"
-                android:layout_height="match_parent"
-                android:text="Other data"/>
-            <TextView
-                android:layout_width="0dp"
-                android:layout_weight="1"
-                android:layout_height="match_parent"
-                android:text="Waking up in..."/>
-        </LinearLayout>
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_weight="1"
-            android:layout_height="0dp"
-            android:text="Graph"/>
+            android:layout_height="match_parent"
+            android:id="@+id/sleepGraph" />
     </LinearLayout>
 
+    <!-- Toggles between graph and camera -->
+    <Button
+        android:layout_width="100dp"
+        android:layout_height="50dp"
+        android:layout_gravity="end"
+        android:id="@+id/toggleCameraButton"
+        android:text="Debug Camera View"
+        android:textSize="10sp"
+        android:onClick="toggleCurrentView"/>
+
+    <!-- Pops up when time for user to wake up -->
     <Button
         android:layout_width="match_parent"
         android:layout_height="match_parent"
