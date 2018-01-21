@@ -1,5 +1,7 @@
 # The Smart Alarm Project
 
+![Landing Page](/doc/media/landingpage.png) ![Intro Questions](/doc/media/introquestions.png)
+
 ## Motivation
 As a student, there have been countless times in which I've gone to bed, ready to get in a good 9 hours, and woken up exhausted, with just enough energy to slog through the day before hitting the sack once more.  However, there have also been countless times in which I've gone to bed expecting to wake up 7 hours later, certain of the migraine I'll have the following day, only to be proven hopelessly wrong by waking full of energy.  What gives?!
 
