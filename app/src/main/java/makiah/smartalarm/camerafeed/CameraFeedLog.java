@@ -1,10 +1,6 @@
 package makiah.smartalarm.camerafeed;
 
-import android.widget.TextView;
-
-import com.makiah.makiahsandroidlib.logging.OnScreenLog;
-
-import makiah.smartalarm.R;
+import dude.makiah.androidlib.logging.OnScreenLog;
 
 public class CameraFeedLog extends OnScreenLog
 {

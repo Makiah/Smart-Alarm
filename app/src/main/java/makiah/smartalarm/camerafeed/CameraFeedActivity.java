@@ -14,8 +14,6 @@ import android.widget.Toast;
 import com.jjoe64.graphview.GraphView;
 import com.jjoe64.graphview.series.DataPoint;
 import com.jjoe64.graphview.series.LineGraphSeries;
-import com.makiah.makiahsandroidlib.logging.OnScreenLogParent;
-import com.makiah.makiahsandroidlib.threading.ParallelTask;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
@@ -31,6 +29,8 @@ import org.opencv.imgproc.Imgproc;
 import java.util.Calendar;
 import java.util.Date;
 
+import dude.makiah.androidlib.logging.OnScreenLogParent;
+import dude.makiah.androidlib.threading.ParallelTask;
 import makiah.smartalarm.R;
 import makiah.smartalarm.postsleepfeedback.PostSleepFeedbackActivity;
 
